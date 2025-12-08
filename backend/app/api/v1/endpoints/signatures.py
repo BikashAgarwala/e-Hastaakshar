@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.signature import SignatureSubmission, SignatureResponse
 from app.services.forgery_service import forgery_checker
+from app.models.transaction import Transaction, TransactionStatus
 from app.worker import process_signature_workflow
 
 router = APIRouter()
@@ -35,14 +36,29 @@ async def submit_signature(
         forgery_checker.log_forgery_event(db, data.user_id, "Location Anomaly", data.location.dict())
         raise HTTPException(status_code=403, detail="Security Alert: Signing location unauthorized.")
 
-    # TODO: new_txn = crud.transaction.create(db, obj_in=data)
-    # transaction_id = new_txn.id
-    transaction_id = "txn_" + data.document_id + "_" + data.user_id
+    transaction_id = f"txn_{data.document_id}_{data.user_id}"
+
+    new_transaction = Transaction(
+        id=transaction_id,
+        user_id=data.user_id,
+        document_id=data.document_id,
+        status=TransactionStatus.PENDING_VERIFICATION,
+        metadata_snapshot=data.device_info.model_dump(mode='json')
+    )
+
+    try:
+        db.add(new_transaction)
+        db.commit()
+        db.refresh(new_transaction)
+    except Exception as e:
+        db.rollback()
+        print(f"DB Error: {e}")
+        raise HTTPException(status_code=500, detail="Database Create Failed")
 
     background_tasks.add_task(
         process_signature_workflow,
         transaction_id,
-        data.model_dump()
+        data.model_dump(mode='json')
     )
 
     return SignatureResponse(
