@@ -49,7 +49,7 @@ class IPFSService:
             'file': (filename, file_bytes)
         }
 
-        metadata = json.dumps({"name": f"Demo_Upload_{filename}"})
+        metadata = json.dumps({"name": f"{filename}"})
         data = {"pinataMetadata": metadata}
 
         try:

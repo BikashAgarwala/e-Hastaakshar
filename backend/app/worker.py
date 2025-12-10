@@ -2,14 +2,12 @@ import hashlib
 import time
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.models.transaction import Transaction, TransactionStatus
+from app.models.transaction import Transaction, TransactionStatus, FailureStep
 from app.services.ipfs_service import ipfs_client
 
 
 def process_signature_workflow(transaction_id: str, data: dict):
-
     db: Session = SessionLocal()
-
     print(f"--- [WORKER] Starting workflow for Txn: {transaction_id} ---")
 
     try:
@@ -26,13 +24,13 @@ def process_signature_workflow(transaction_id: str, data: dict):
             data['evidence']['signature_image_b64'],
             data['evidence']['front_camera_image_b64']
         )
-
         txn_record.ml_confidence_score = ml_confidence_score
 
         if ml_confidence_score < 0.80:
-            print(f"❌ [FAIL] Score {ml_confidence_score} too low.")
+            print(f"❌ [FAIL] ML Score {ml_confidence_score} too low.")
             txn_record.status = TransactionStatus.REJECTED
-            txn_record.rejection_reason = "Biometric mismatch or low quality."
+            txn_record.failure_step = FailureStep.LIVENESS_CHECK
+            txn_record.rejection_reason = "Signature ML check failed."
             db.commit()
             return
 
@@ -53,22 +51,18 @@ def process_signature_workflow(transaction_id: str, data: dict):
         cid = ipfs_client.upload_json_metadata(transaction_id, ipfs_payload)
 
         if not cid:
-            print("❌ [FAIL] IPFS Upload failed.")
-            txn_record.status = TransactionStatus.FAILED_UPLOAD
+            print("❌ [FAIL] IPFS Upload failed (Metadata).")
+            txn_record.status = TransactionStatus.REJECTED
             txn_record.rejection_reason = "IPFS Connection Failed"
             db.commit()
             return
 
-        public_url = ipfs_client.generate_public_url(cid)
-
         txn_record.ipfs_cid = cid
-        txn_record.ipfs_public_url = public_url
-        txn_record.status = TransactionStatus.VERIFIED
 
+        txn_record.status = TransactionStatus.PENDING_PARTNER_REVIEW
         db.commit()
 
-        print(f"🌍 [SUCCESS] Transaction Verified & Pinned!")
-        print(f"🔗 [LINK] {public_url}")
+        print(f"⏸️ [WAIT] Txn {transaction_id} paused. Waiting for Partner Approval.")
 
     except Exception as e:
         print(f"🔥 [CRITICAL WORKER ERROR] {str(e)}")

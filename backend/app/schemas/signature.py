@@ -28,7 +28,6 @@ class DeviceMetadata(BaseModel):
 
 
 class BiometricEvidence(BaseModel):
-
     signature_image_b64: str = Field(..., description="Base64 encoded PNG/JPG of the signature")
     front_camera_image_b64: str = Field(..., description="Base64 encoded selfie taken at moment of signing")
     fingerprint_hash: Optional[str] = None
@@ -37,6 +36,9 @@ class BiometricEvidence(BaseModel):
 class SignatureSubmission(BaseModel):
     user_id: str = Field(..., description="UUID of the registered user")
     document_id: str = Field(..., description="ID of the document being signed")
+
+    partner_id: str = Field(..., description="ID of the Partner (Bank/Org) selected by user")
+
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     location: GeoLocation
     device_info: DeviceMetadata
@@ -47,6 +49,7 @@ class SignatureSubmission(BaseModel):
             "example": {
                 "user_id": "user_123456",
                 "document_id": "doc_987654",
+                "partner_id": "partner_hdfc",
                 "timestamp": "2025-10-24T10:00:00Z",
                 "location": {
                     "latitude": 28.6139,

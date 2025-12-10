@@ -42,6 +42,7 @@ async def submit_signature(
         id=transaction_id,
         user_id=data.user_id,
         document_id=data.document_id,
+        partner_id=data.partner_id,
         status=TransactionStatus.PENDING_VERIFICATION,
         metadata_snapshot=data.device_info.model_dump(mode='json')
     )
