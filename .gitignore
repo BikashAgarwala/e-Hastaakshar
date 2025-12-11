@@ -1,0 +1,59 @@
+# ==================================
+# Python & Virtual Environments
+# ==================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==================================
+# Environment Variables & Secrets
+# ==================================
+.env
+.env.local
+.env.production
+
+# ==================================
+# IDE & Operating System
+# ==================================
+# VS Code
+.vscode/
+# PyCharm / IntelliJ
+.idea/
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+
+# ==================================
+# Testing & Coverage
+# ==================================
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ==================================
+# Database & Docker
+# ==================================
+*.sqlite3
+postgres_data/
+docker-compose.override.yml
+
+# ==================================
+# Celery
+# ==================================
+celerybeat-schedule
+celerybeat.pid
+
+# ==================================
+# Logs
+# ==================================
+*.log
+logs/

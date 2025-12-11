@@ -1,21 +1,32 @@
-name: Hoppscotch API Test
+name: Generate API Schema
 on: [push]
 
 jobs:
-  test-api:
+  generate-schema:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-python@v4
         with:
-          node-version: '20'
+          python-version: '3.12'
 
-      - name: Install Hoppscotch CLI
-        run: npm install -g @hoppscotch/cli
-
-      - name: Run Hoppscotch Tests
+      - name: Install Dependencies
         run: |
-          hopp test ./hopp-collection.json \
-            --env ./hopp-env.json
+          pip install -r requirements.txt
+
+      - name: Generate OpenAPI JSON
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: db
+          POSTGRES_SERVER: localhost
+        run: |
+          # We need to set python path so it finds 'app' module
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          python extract_openapi.py
+
+      - name: Upload Schema Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-schema
+          path: openapi.json
