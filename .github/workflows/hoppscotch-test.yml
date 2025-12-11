@@ -4,6 +4,11 @@ on: [push]
 jobs:
   generate-schema:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -20,13 +25,17 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_DB: db
           POSTGRES_SERVER: localhost
+          PINATA_API_KEY: dummy
+          PINATA_SECRET_KEY: dummy
+          RESEND_API_KEY: dummy
         run: |
-          # We need to set python path so it finds 'app' module
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python extract_openapi.py
+          # We add the current directory (.) to python path so it finds 'app'
+          export PYTHONPATH=$PYTHONPATH:.
+          # Run the script (which is inside backend/scripts/)
+          python scripts/extract_openapi.py
 
       - name: Upload Schema Artifact
         uses: actions/upload-artifact@v4
         with:
           name: api-schema
-          path: openapi.json
+          path: backend/openapi.json
