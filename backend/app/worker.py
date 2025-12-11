@@ -3,6 +3,8 @@ import time
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.transaction import Transaction, TransactionStatus, FailureStep
+from app.models.user import User
+from app.services.email_service import email_notifier
 from app.services.ipfs_service import ipfs_client
 
 
@@ -58,6 +60,17 @@ def process_signature_workflow(transaction_id: str, data: dict):
             return
 
         txn_record.ipfs_cid = cid
+
+        user = db.query(User).filter(User.id == txn_record.user_id).first()
+
+        if user and user.email:
+            print(f"📧 Sending notification to {user.email}...")
+            email_notifier.send_signature_alert(
+                recipient_email=user.email,
+                user_name=user.full_name,
+                location=data['location'],
+                transaction_id=transaction_id
+            )
 
         txn_record.status = TransactionStatus.PENDING_PARTNER_REVIEW
         db.commit()
