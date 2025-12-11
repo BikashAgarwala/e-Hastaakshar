@@ -1,0 +1,21 @@
+name: Hoppscotch API Test
+on: [push]
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Hoppscotch CLI
+        run: npm install -g @hoppscotch/cli
+
+      - name: Run Hoppscotch Tests
+        run: |
+          hopp test ./hopp-collection.json \
+            --env ./hopp-env.json
