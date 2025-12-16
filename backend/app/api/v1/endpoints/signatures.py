@@ -16,9 +16,8 @@ async def submit_signature(
         data: SignatureSubmission,
         background_tasks: BackgroundTasks
 ):
-
     if data.device_info.is_rooted:
-        forgery_checker.log_forgery_event(db, data.user_id, "Rooted Device", {})
+        forgery_checker.log_forgery_event(db, data.user_id, "Rooted Device", data.device_info.model_dump(mode='json'))
         raise HTTPException(status_code=403, detail="Security Alert: Rooted devices are not supported.")
 
     registered_mac = "00:1B:44:11:3A:B7"
@@ -26,14 +25,24 @@ async def submit_signature(
     registered_lon = 77.2090
 
     if forgery_checker.is_mac_mismatched(registered_mac, data.device_info.mac_address):
-        forgery_checker.log_forgery_event(db, data.user_id, "MAC Mismatch", data.device_info.dict())
+        forgery_checker.log_forgery_event(
+            db,
+            data.user_id,
+            "MAC Mismatch",
+            data.device_info.model_dump(mode='json')
+        )
         raise HTTPException(status_code=403, detail="Security Alert: Device not recognized.")
 
     if forgery_checker.is_location_suspicious(
             registered_lat, registered_lon,
             data.location.latitude, data.location.longitude
     ):
-        forgery_checker.log_forgery_event(db, data.user_id, "Location Anomaly", data.location.dict())
+        forgery_checker.log_forgery_event(
+            db,
+            data.user_id,
+            "Location Anomaly",
+            data.location.model_dump(mode='json')
+        )
         raise HTTPException(status_code=403, detail="Security Alert: Signing location unauthorized.")
 
     transaction_id = f"txn_{data.document_id}_{data.user_id}"
@@ -54,7 +63,7 @@ async def submit_signature(
     except Exception as e:
         db.rollback()
         print(f"DB Error: {e}")
-        raise HTTPException(status_code=500, detail="Database Create Failed")
+        raise HTTPException(status_code=500, detail=f"Database Create Failed: {str(e)}")
 
     background_tasks.add_task(
         process_signature_workflow,
